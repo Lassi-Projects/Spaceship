@@ -1,6 +1,7 @@
 from tkinter import *
 import random
 import time
+import math
 
 #Superclass for all moving objects on Canvas
 class Hull():
@@ -11,18 +12,26 @@ class Hull():
                                 position on y-axis (int y),
                                 hull's image path (str image_path)
                                 
-                            And has 2 optional arguments
+                            And has 3 optional arguments
                                 speed on x-axis (int sx)[defaults to 0]
                                 speed on y-axis (int sy)[defaults to 0]
+                                object size compared to original photosize x:100
+                                    (int scale > 0)[defaults to 100]
                                 """
     #Default constructor
     def __init__(self, x: int, y: int, image_path: str, 
-                 sx: int = 0, sy: int = 0):
-        self._x = x
+                 sx: int = 0, sy: int = 0, scale: int = 100):
+        #setting image to correct size
+        self.image = PhotoImage(file = image_path)
+
+        #TODO: add image scaling
+
+        self._x = x - self.image.width() / 2
         self._y = y
         self._sx = sx
         self._sy = sy
-        self.image = PhotoImage(file = image_path)
+
+        self.size = [self.image.width(), self.image.height()]
         
     def get_X(self) -> int:
         """Returns object's x-position"""
@@ -32,6 +41,37 @@ class Hull():
         """Returns object's y-position"""
         return self._y
 
+    def get_middle(self) -> list:
+        """Returns middle point [x, y] of the object"""
+        if self.get_X() - self.size[0] < 0:
+            self_x = 0
+        elif self.get_X() - self.size[0] > canvas_size[0]:
+            self_x = canvas_size[0]
+        else:
+            self_x = self.get_X() - self.size[0]
+
+        if self.get_Y() - self.size[1] < 0:
+            self_y = 0
+        elif self.get_Y() - self.size[1] > canvas_size[1]:
+            self_y = canvas_size[1]
+        else:
+            self_y = self.get_Y() - self.size[1]
+
+        return [self_x, self_y]
+
+    def get_radius(self) -> int:
+        """Calculates objects radius"""
+        
+        n = min(self.size)
+        n = n / 2
+        return n
+
+        #Older version
+        #n = (self.size[0] / 2) ** 2 + (self.size[1] / 2) ** 2
+        #n = math.sqrt(n)
+        #n = int(n)
+        #return n
+
     def get_image(self) -> PhotoImage:
         """Returns PhotoImage containing object's picture"""
         return self.image
@@ -39,6 +79,20 @@ class Hull():
     def draw(self, canvas: Canvas):
         """Draws object's picture on given canvas"""
         canvas.create_image(self._x, self._y, anchor = NW, image = self.image)
+
+    def collision(self, other):
+        """Checks collision with parameter object. If collision, returns true, else returns false"""
+
+        print("Self ", self.get_middle()[0], self.get_middle()[1])
+        print("Other ", other.get_middle()[0], other.get_middle()[1])
+
+        distance = math.sqrt((abs(self.get_middle()[0] - other.get_middle()[0]) ** 2) \
+           + (abs(self.get_middle()[1] - other.get_middle()[1])** 2))
+
+        if distance < self.get_radius() + other.get_radius():
+            return True
+        else:
+            return False
 
 #Hero's spaceship (Hull with added features like acceleration)
 class Hero(Hull):
@@ -49,9 +103,10 @@ class Hero(Hull):
                                 position on y-axis (int y),
                                 hull's image path (str image_path)
                                 
-                            And has 2 optional arguments
+                            And has 3 optional arguments
                                 speed on x-axis (int sx)[defaults to 0]
                                 speed on y-axis (int sy)[defaults to 0]
+                                object size compared to original photosize (float > 0)[defaults to 1]
                                 """
     #Acceleration to left(amount of change given in argument)
     def move_left(self):
@@ -69,6 +124,10 @@ class Hero(Hull):
         """
         self._x = ((self._x + (self.image.width() / 2) + self._sx) % canvas_size[0]) - self.image.width() / 2
 
+    def get_middle(self):
+        y = self._y - self.size[1] /2
+        return [super().get_middle()[0], y]
+
 #Flying rocks class
 class Rock(Hull):
     """Flying object with no speed modification
@@ -78,10 +137,12 @@ class Rock(Hull):
                                 position on y-axis (int y),
                                 hull's image path (str image_path)
                                 
-                            And has 2 optional arguments
+                            And has 3 optional arguments
                                 speed on x-axis (int sx)[defaults to 0]
                                 speed on y-axis (int sy)[defaults to 0]
+                                object size compared to original photosize (float > 0)[defaults to 1]
                                 """
+
     def move_down(self):
         """Move rock down
 
@@ -125,10 +186,14 @@ def spawn_enemy(hulls: list):
     """
     hulls.append(Rock(random.randint(0, canvas_size[0]), 0, rock_image, sy = 10))
 
+def game_over():
+    master.destroy()
+
 #Magic variables
 canvas_size = [800, 600]
 rock_image = "Art/Rock1.gif"
 hero_image = "Art/ScarabSolo.gif"
+hero_y_position = canvas_size[1] - 140
 time.clock()
 
 #STARTING INTERFACE ITEMS
@@ -148,13 +213,13 @@ canvas.pack()
 hulls = list()
 
 #Player-controlled Hero object created on the bottom of canvas
-spacehero = Hero(canvas_size[0] / 2, canvas_size[1] - 140, hero_image, sx = 5)
+spacehero = Hero(canvas_size[0] / 2, hero_y_position, hero_image, sx = 5)
 
 #Eventhandlers
 def refresher():
     """Recursion loop to control canvas drawing"""
     draw(canvas, hulls, spacehero)
-    master.after(50, refresher)
+    master.after(5, refresher)
 
 def handler():
     """Recursion loop to control game objects refreshing"""
@@ -170,10 +235,13 @@ def handler():
             remove_checker = hull.move_down()
             if(remove_checker == hull):
                 hulls.remove(hull)
-            else:
-                print(len(hulls))
 
-    master.after(100, handler)
+    #Check collision of Rocks and Spacehero
+    for hull in hulls:
+        if hull.collision(spacehero):
+            game_over()
+
+    master.after(50, handler)
     
 def move_right(event):
     """Throw away method to fix spacehero movement problems"""
