@@ -55,19 +55,9 @@ class Hull():
 
     def get_middle(self) -> list:
         """Returns middle point [x, y] of the object"""
-        if self.get_x() - self.size[0] < 0:
-            self_x = 0
-        elif self.get_x() - self.size[0] > Globals.canvas_size[0]:
-            self_x = Globals.canvas_size[0]
-        else:
-            self_x = self.get_x() - self.size[0]
 
-        if self.get_y() - self.size[1] < 0:
-            self_y = 0
-        elif self.get_y() - self.size[1] > Globals.canvas_size[1]:
-            self_y = Globals.canvas_size[1]
-        else:
-            self_y = self.get_y() - self.size[1]
+        self_x = self.get_x() - self.size[0]
+        self_y = self.get_y() - self.size[1]
 
         return [self_x, self_y]
 
@@ -126,10 +116,6 @@ class Hero(Hull):
         Movement speed determined by speed on x-axis (int sx)
         """
         self._x = ((self._x + (self.image.width() / 2) + self._sx) % Globals.canvas_size[0]) - self.image.width() / 2
-
-    def get_middle(self):
-        y = self._y - self.size[1] /2
-        return [super().get_middle()[0], y]
 
 #Flying rocks class
 class Rock(Hull):
