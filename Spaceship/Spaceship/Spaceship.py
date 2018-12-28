@@ -8,6 +8,8 @@ class Globals():
     #Canvas size
     canvas_size = [800, 600]
     starting_points = 0
+    game_refresh_rate = 1
+    graphics_refresh_rate = 1
 
     #Hero specific
     position_hero_y = canvas_size[1] - 140
@@ -212,7 +214,7 @@ points = Globals.starting_points
 def graphics_refresher():
     """Recursion loop to control canvas drawing"""
     graphics_operator(canvas, hulls, spacehero, points)
-    master.after(5, graphics_refresher)
+    master.after(Globals.graphics_refresh_rate, graphics_refresher)
 
 def game_manager():
     """Recursion loop to control game objects refreshing"""
@@ -240,7 +242,7 @@ def game_manager():
         if hull.collision(spacehero):
             game_over()
 
-    master.after(50, game_manager)
+    master.after(Globals.game_refresh_rate, game_manager)
 
 master.after(10, game_manager)
 master.after(50, graphics_refresher)
