@@ -3,6 +3,18 @@ import random
 import time
 import math
 
+#All immutable global functions and variables
+class Globals():
+    #Canvas size
+    canvas_size = [800, 600]
+
+    #Hero specific
+    position_hero_y = canvas_size[1] - 140
+
+    #Art work paths
+    image_rock = "Art/Debug_cube.gif"
+    image_hero = "Art/ScarabSolo.gif"
+
 #Superclass for all moving objects on Canvas
 class Hull():
     """Hull class used as a superclass for all moving elements in game
@@ -33,29 +45,29 @@ class Hull():
 
         self.size = [self.image.width(), self.image.height()]
         
-    def get_X(self) -> int:
+    def get_x(self) -> int:
         """Returns object's x-position"""
         return self._x
 
-    def get_Y(self) -> int:
+    def get_y(self) -> int:
         """Returns object's y-position"""
         return self._y
 
     def get_middle(self) -> list:
         """Returns middle point [x, y] of the object"""
-        if self.get_X() - self.size[0] < 0:
+        if self.get_x() - self.size[0] < 0:
             self_x = 0
-        elif self.get_X() - self.size[0] > canvas_size[0]:
-            self_x = canvas_size[0]
+        elif self.get_x() - self.size[0] > Globals.canvas_size[0]:
+            self_x = Globals.canvas_size[0]
         else:
-            self_x = self.get_X() - self.size[0]
+            self_x = self.get_x() - self.size[0]
 
-        if self.get_Y() - self.size[1] < 0:
+        if self.get_y() - self.size[1] < 0:
             self_y = 0
-        elif self.get_Y() - self.size[1] > canvas_size[1]:
-            self_y = canvas_size[1]
+        elif self.get_y() - self.size[1] > Globals.canvas_size[1]:
+            self_y = Globals.canvas_size[1]
         else:
-            self_y = self.get_Y() - self.size[1]
+            self_y = self.get_y() - self.size[1]
 
         return [self_x, self_y]
 
@@ -65,12 +77,6 @@ class Hull():
         n = min(self.size)
         n = n / 2
         return n
-
-        #Older version
-        #n = (self.size[0] / 2) ** 2 + (self.size[1] / 2) ** 2
-        #n = math.sqrt(n)
-        #n = int(n)
-        #return n
 
     def get_image(self) -> PhotoImage:
         """Returns PhotoImage containing object's picture"""
@@ -82,9 +88,6 @@ class Hull():
 
     def collision(self, other):
         """Checks collision with parameter object. If collision, returns true, else returns false"""
-
-        print("Self ", self.get_middle()[0], self.get_middle()[1])
-        print("Other ", other.get_middle()[0], other.get_middle()[1])
 
         distance = math.sqrt((abs(self.get_middle()[0] - other.get_middle()[0]) ** 2) \
            + (abs(self.get_middle()[1] - other.get_middle()[1])** 2))
@@ -109,20 +112,20 @@ class Hero(Hull):
                                 object size compared to original photosize (float > 0)[defaults to 1]
                                 """
     #Acceleration to left(amount of change given in argument)
-    def move_left(self):
+    def move_left(self, event):
         """Move spaceship to left
 
         Movement speed determined by speed on x-axis (int sx)
         """
-        self._x = ((self._x + (self.image.width() / 2) - self._sx) % canvas_size[0]) - self.image.width() / 2
+        self._x = ((self._x + (self.image.width() / 2) - self._sx) % Globals.canvas_size[0]) - self.image.width() / 2
 
     #Acceleration to right
-    def move_right(self):
+    def move_right(self, event):
         """Move spaceship to right
 
         Movement speed determined by speed on x-axis (int sx)
         """
-        self._x = ((self._x + (self.image.width() / 2) + self._sx) % canvas_size[0]) - self.image.width() / 2
+        self._x = ((self._x + (self.image.width() / 2) + self._sx) % Globals.canvas_size[0]) - self.image.width() / 2
 
     def get_middle(self):
         y = self._y - self.size[1] /2
@@ -151,13 +154,13 @@ class Rock(Hull):
         """
         self._y = self._y + self._sy
 
-        if self._y > canvas_size[1]:
+        if self._y > Globals.canvas_size[1]:
             return self
         else:
             return None
 
 #DRAW images on the canvas
-def draw(canvas: Canvas, hulls: list, spacehero: Hero):
+def graphics_operator(canvas: Canvas, hulls: list, spacehero: Hero):
     """Handles all drawing that happens on canvas
 
     Parameters:
@@ -169,7 +172,7 @@ def draw(canvas: Canvas, hulls: list, spacehero: Hero):
     canvas.delete("all")
 
     #create black background
-    canvas.create_rectangle(0, 0, canvas_size[0], canvas_size[1], fill = "black")
+    canvas.create_rectangle(0, 0, Globals.canvas_size[0], Globals.canvas_size[1], fill = "black")
 
     #draw spacehero
     spacehero.draw(canvas)
@@ -178,50 +181,50 @@ def draw(canvas: Canvas, hulls: list, spacehero: Hero):
     for hull in hulls:
         hull.draw(canvas)
 
+###
+#STARTING INTERFACE ITEMS
+
+#master
+master = Tk()
+master.title("Space Mission") #name
+master.resizable(0, 0) #not resizeable
+
+#canvas
+canvas = Canvas(master, width = Globals.canvas_size[0], height = Globals.canvas_size[1])
+canvas.pack()
+
+#time
+time.clock()
+
+###
+#GAME part
+
 def spawn_enemy(hulls: list):
     """Adds new enemies to hulls-list
 
     Parameters:
         hulls (list) containing all non-hero moving objects
     """
-    hulls.append(Rock(random.randint(0, canvas_size[0]), 0, rock_image, sy = 10))
+    hulls.append(Rock(random.randint(0, Globals.canvas_size[0]), 0, Globals.image_rock, sy = 10))
 
 def game_over():
+    """Actions taken at end of the game"""
     master.destroy()
-
-#Magic variables
-canvas_size = [800, 600]
-rock_image = "Art/Rock1.gif"
-hero_image = "Art/ScarabSolo.gif"
-hero_y_position = canvas_size[1] - 140
-time.clock()
-
-#STARTING INTERFACE ITEMS
-
-#master
-master = Tk()
-master.title("Space Wars") #name
-master.resizable(0, 0) #not resizeable
-
-#canvas
-canvas = Canvas(master, width = canvas_size[0], height = canvas_size[1])
-canvas.pack()
-
-#GAME part
+    print("Game over")
 
 #hulls list to contain all non-hero moving objects
 hulls = list()
 
 #Player-controlled Hero object created on the bottom of canvas
-spacehero = Hero(canvas_size[0] / 2, hero_y_position, hero_image, sx = 5)
+spacehero = Hero(Globals.canvas_size[0] / 2, Globals.position_hero_y, Globals.image_hero, sx = 5)
 
 #Eventhandlers
-def refresher():
+def graphics_refresher():
     """Recursion loop to control canvas drawing"""
-    draw(canvas, hulls, spacehero)
-    master.after(5, refresher)
+    graphics_operator(canvas, hulls, spacehero)
+    master.after(5, graphics_refresher)
 
-def handler():
+def game_manager():
     """Recursion loop to control game objects refreshing"""
 
     #Create new enemies somewhat randomly
@@ -241,20 +244,12 @@ def handler():
         if hull.collision(spacehero):
             game_over()
 
-    master.after(50, handler)
-    
-def move_right(event):
-    """Throw away method to fix spacehero movement problems"""
-    spacehero.move_right()
+    master.after(50, game_manager)
 
-def move_left(event):
-    """Throw away method to fix spacehero movement problems"""
-    spacehero.move_left()
-
-master.after(10, handler)
-master.after(50, refresher)
-master.bind('<Right>', move_right)
-master.bind('<Left>', move_left)
+master.after(10, game_manager)
+master.after(50, graphics_refresher)
+master.bind('<Right>', spacehero.move_right)
+master.bind('<Left>', spacehero.move_left)
 
 #mainloop
 master.mainloop()
