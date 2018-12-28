@@ -12,8 +12,8 @@ class Globals():
     position_hero_y = canvas_size[1] - 140
 
     #Art work paths
-    image_rock = "Art/Debug_cube.gif"
-    image_hero = "Art/ScarabSolo.gif"
+    image_rock = "Art/meteorB4.png"
+    image_hero = "Art/ship.png"
 
 #Superclass for all moving objects on Canvas
 class Hull():

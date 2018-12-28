@@ -1,2 +1,2 @@
-Art by Tartermand licensed CC-BY-SA 3.0
-from https://opengameart.org/content/space-game-art-pack-extended
+Art by Kenney.nl licensed CC0 (Public domain)
+from https://opengameart.org/content/space-shooter-redux
