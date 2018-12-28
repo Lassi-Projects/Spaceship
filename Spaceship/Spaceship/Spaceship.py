@@ -160,7 +160,7 @@ class Rock(Hull):
             return None
 
 #DRAW images on the canvas
-def graphics_operator(canvas: Canvas, hulls: list, spacehero: Hero):
+def graphics_operator(canvas: Canvas, hulls: list, spacehero: Hero, points: int):
     """Handles all drawing that happens on canvas
 
     Parameters:
@@ -168,11 +168,17 @@ def graphics_operator(canvas: Canvas, hulls: list, spacehero: Hero):
         hulls (list) containing all non-spacehero moving objects
         spacehero (Hero) player-controlled unit
     """
+
+    points_text = "Points: " + str(points)
+
     #clear old drawings
     canvas.delete("all")
 
     #create black background
     canvas.create_rectangle(0, 0, Globals.canvas_size[0], Globals.canvas_size[1], fill = "black")
+
+    #show points on canvas 
+    canvas.create_text(Globals.canvas_size[0] - 60, 10, anchor = NW, text=points_text, fill="white")
 
     #draw spacehero
     spacehero.draw(canvas)
@@ -210,7 +216,7 @@ def spawn_enemy(hulls: list):
 def game_over():
     """Actions taken at end of the game"""
     master.destroy()
-    print("Game over")
+    print("Game over\nYour points: ", points)
 
 #hulls list to contain all non-hero moving objects
 hulls = list()
@@ -218,14 +224,19 @@ hulls = list()
 #Player-controlled Hero object created on the bottom of canvas
 spacehero = Hero(Globals.canvas_size[0] / 2, Globals.position_hero_y, Globals.image_hero, sx = 5)
 
+#points calculator /points added when rocks reach bottom of the screen
+points = 0
+
 #Eventhandlers
 def graphics_refresher():
     """Recursion loop to control canvas drawing"""
-    graphics_operator(canvas, hulls, spacehero)
+    graphics_operator(canvas, hulls, spacehero, points)
     master.after(5, graphics_refresher)
 
 def game_manager():
     """Recursion loop to control game objects refreshing"""
+
+    global points
 
     #Create new enemies somewhat randomly
     rnd = random.random()
@@ -235,9 +246,13 @@ def game_manager():
     #Move and refresh all non-hero items
     for hull in hulls:
         if type(hull) == Rock:
+            #hull.move_down returns object itself if it reaches bottom of screen
             remove_checker = hull.move_down()
             if(remove_checker == hull):
+                #remove hull referance from list
                 hulls.remove(hull)
+                #add points
+                points += 1
 
     #Check collision of Rocks and Spacehero
     for hull in hulls:
