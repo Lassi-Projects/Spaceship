@@ -8,15 +8,22 @@ class Globals():
     #Canvas size
     canvas_size = [800, 600]
     starting_points = 0
-    game_refresh_rate = 1
-    graphics_refresh_rate = 1
+    game_refresh_rate = 10
+    graphics_refresh_rate = 10
 
     #Hero specific
     position_hero_y = canvas_size[1] - 140
-    speed_hero = 5
+    speed_hero = 6 #pixel/10ms
 
     #Rock specific
-    speed_rock = 10
+    speed_rock = 2 #pixels/10ms
+    rock_acceleration = 0.1 #(pixels/10ms)/points_to_acc
+    points_to_acc = 5
+    #spawn rate
+    rate_range = 100
+    rate_limit = 95
+    spawn_interval = 1
+
 
     #Art work paths
     image_rock = "Art/meteorB4.png"
@@ -34,12 +41,13 @@ class Hull():
                             And has 3 optional arguments
                                 speed on x-axis (int sx)[defaults to 0]
                                 speed on y-axis (int sy)[defaults to 0]
+                                speed is pixels/10ms
                                 object size compared to original photosize x:100
                                     (int scale > 0)[defaults to 100]
                                 """
     #Default constructor
-    def __init__(self, x: int, y: int, image_path: str, 
-                 sx: int = 0, sy: int = 0, scale: int = 100):
+    def __init__(self, x: float, y: float, image_path: str, 
+                 sx: float = 0, sy: float = 0, scale: int = 100):
         #setting image to correct size
         self.image = PhotoImage(file = image_path)
 
@@ -48,6 +56,7 @@ class Hull():
 
         self.x = x
         self.y = y
+        #speed is in pixels/10ms
         self.sx = sx
         self.sy = sy
 
@@ -76,9 +85,6 @@ class Hull():
         distance = math.sqrt((abs(self.x - other.x) ** 2) \
            + (abs(self.y - other.y)** 2))
 
-        print("Player: ", other.x)
-        print("Rock: ", self.x)
-
         if distance < self.get_radius() + other.get_radius():
             return True
         else:
@@ -96,6 +102,7 @@ class Hero(Hull):
                             And has 3 optional arguments
                                 speed on x-axis (int sx)[defaults to 0]
                                 speed on y-axis (int sy)[defaults to 0]
+                                speed is pixels/10ms
                                 object size compared to original photosize (float > 0)[defaults to 1]
                                 """
     #Acceleration to left(amount of change given in argument)
@@ -126,6 +133,7 @@ class Rock(Hull):
                             And has 3 optional arguments
                                 speed on x-axis (int sx)[defaults to 0]
                                 speed on y-axis (int sy)[defaults to 0]
+                                speed is pixels/10ms
                                 object size compared to original photosize (float > 0)[defaults to 1]
                                 """
 
@@ -183,18 +191,21 @@ canvas = Canvas(master, width = Globals.canvas_size[0], height = Globals.canvas_
 canvas.pack()
 
 #time
-time.clock()
+last_time = time.time()
 
 ###
 #GAME part
 
-def spawn_enemy(hulls: list):
+def spawn_meteor(hulls: list, points):
     """Adds new enemies to hulls-list
 
     Parameters:
         hulls (list) containing all non-hero moving objects
     """
-    hulls.append(Rock(random.randint(0, Globals.canvas_size[0]), 0, Globals.image_rock, sy = Globals.speed_rock))
+    point_level = int(points / Globals.points_to_acc)
+    rock_speed = Globals.speed_rock + Globals.rock_acceleration * (point_level)
+
+    hulls.append(Rock(random.randint(0, Globals.canvas_size[0]), 0, Globals.image_rock, sy = rock_speed))
 
 def game_over():
     """Actions taken at end of the game"""
@@ -209,6 +220,8 @@ spacehero = Hero(Globals.canvas_size[0] / 2, Globals.position_hero_y, Globals.im
 
 #points calculator /points added when rocks reach bottom of the screen
 points = Globals.starting_points
+#Controls meteor spawning
+spawn_control = False
 
 #Eventhandlers
 def graphics_refresher():
@@ -219,13 +232,23 @@ def graphics_refresher():
 def game_manager():
     """Recursion loop to control game objects refreshing"""
 
+    #control points
     global points
+    #Control interval of spawns
+    global last_time
+    global spawn_control
+    #create random integer
+    rnd = random.randrange(Globals.rate_range)
 
-    #Create new enemies somewhat randomly #TODO: organize and improve
-    rnd = random.random()
-    if(time.clock() % 3*rnd > 2.9*rnd):
-        spawn_enemy(hulls)
-    
+    #Create new enemies
+    if(spawn_control):
+        spawn_meteor(hulls, points)
+        last_time = time.time()
+        spawn_control = False
+    #spawn enemies after spawn_interval time and if rnd exceeds rate_limit
+    elif(time.time() - last_time > Globals.spawn_interval and rnd > Globals.rate_limit):
+        spawn_control = True
+
     #Move and refresh all non-hero items
     for hull in hulls:
         if type(hull) == Rock:
