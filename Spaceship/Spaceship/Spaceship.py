@@ -7,9 +7,14 @@ import math
 class Globals():
     #Canvas size
     canvas_size = [800, 600]
+    starting_points = 0
 
     #Hero specific
     position_hero_y = canvas_size[1] - 140
+    speed_hero = 5
+
+    #Rock specific
+    speed_rock = 10
 
     #Art work paths
     image_rock = "Art/meteorB4.png"
@@ -37,35 +42,21 @@ class Hull():
         self.image = PhotoImage(file = image_path)
 
         #TODO: add image scaling
+        self.size = [self.image.width(), self.image.height()]
 
-        self._x = x - self.image.width() / 2
-        self._y = y
-        self._sx = sx
-        self._sy = sy
+        self.x = x
+        self.y = y
+        self.sx = sx
+        self.sy = sy
 
         self.size = [self.image.width(), self.image.height()]
-        
-    def get_x(self) -> int:
-        """Returns object's x-position"""
-        return self._x
-
-    def get_y(self) -> int:
-        """Returns object's y-position"""
-        return self._y
-
-    def get_middle(self) -> list:
-        """Returns middle point [x, y] of the object"""
-
-        self_x = self.get_x() - self.size[0]
-        self_y = self.get_y() - self.size[1]
-
-        return [self_x, self_y]
 
     def get_radius(self) -> int:
         """Calculates objects radius"""
         
         n = min(self.size)
         n = n / 2
+        n = int(n)
         return n
 
     def get_image(self) -> PhotoImage:
@@ -74,13 +65,17 @@ class Hull():
 
     def draw(self, canvas: Canvas):
         """Draws object's picture on given canvas"""
-        canvas.create_image(self._x, self._y, anchor = NW, image = self.image)
+        canvas.create_image(self.x - (self.size[0] / 2), \
+            self.y - (self.size[1] / 2), anchor = NW, image = self.image)
 
     def collision(self, other):
         """Checks collision with parameter object. If collision, returns true, else returns false"""
 
-        distance = math.sqrt((abs(self.get_middle()[0] - other.get_middle()[0]) ** 2) \
-           + (abs(self.get_middle()[1] - other.get_middle()[1])** 2))
+        distance = math.sqrt((abs(self.x - other.x) ** 2) \
+           + (abs(self.y - other.y)** 2))
+
+        print("Player: ", other.x)
+        print("Rock: ", self.x)
 
         if distance < self.get_radius() + other.get_radius():
             return True
@@ -107,7 +102,7 @@ class Hero(Hull):
 
         Movement speed determined by speed on x-axis (int sx)
         """
-        self._x = ((self._x + (self.image.width() / 2) - self._sx) % Globals.canvas_size[0]) - self.image.width() / 2
+        self.x = ((self.x - self.sx) % Globals.canvas_size[0])
 
     #Acceleration to right
     def move_right(self, event):
@@ -115,7 +110,7 @@ class Hero(Hull):
 
         Movement speed determined by speed on x-axis (int sx)
         """
-        self._x = ((self._x + (self.image.width() / 2) + self._sx) % Globals.canvas_size[0]) - self.image.width() / 2
+        self.x = ((self.x + self.sx) % Globals.canvas_size[0])
 
 #Flying rocks class
 class Rock(Hull):
@@ -138,9 +133,9 @@ class Rock(Hull):
         Movement speed determined by speed on y-axis (int sy)
         Returns itself when it is outside canvas, otherwise None is returned.
         """
-        self._y = self._y + self._sy
+        self.y = self.y + self.sy
 
-        if self._y > Globals.canvas_size[1]:
+        if self.y > Globals.canvas_size[1]:
             return self
         else:
             return None
@@ -197,7 +192,7 @@ def spawn_enemy(hulls: list):
     Parameters:
         hulls (list) containing all non-hero moving objects
     """
-    hulls.append(Rock(random.randint(0, Globals.canvas_size[0]), 0, Globals.image_rock, sy = 10))
+    hulls.append(Rock(random.randint(0, Globals.canvas_size[0]), 0, Globals.image_rock, sy = Globals.speed_rock))
 
 def game_over():
     """Actions taken at end of the game"""
@@ -208,10 +203,10 @@ def game_over():
 hulls = list()
 
 #Player-controlled Hero object created on the bottom of canvas
-spacehero = Hero(Globals.canvas_size[0] / 2, Globals.position_hero_y, Globals.image_hero, sx = 5)
+spacehero = Hero(Globals.canvas_size[0] / 2, Globals.position_hero_y, Globals.image_hero, sx = Globals.speed_hero)
 
 #points calculator /points added when rocks reach bottom of the screen
-points = 0
+points = Globals.starting_points
 
 #Eventhandlers
 def graphics_refresher():
@@ -224,7 +219,7 @@ def game_manager():
 
     global points
 
-    #Create new enemies somewhat randomly
+    #Create new enemies somewhat randomly #TODO: organize and improve
     rnd = random.random()
     if(time.clock() % 3*rnd > 2.9*rnd):
         spawn_enemy(hulls)
